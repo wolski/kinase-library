@@ -52,3 +52,7 @@ venv.bak/
 
 # Notebooks
 .ipynb_checkpoints
+data/example_outputs/
+data/example_inputs/
+uv.lock
+.snakemake/
