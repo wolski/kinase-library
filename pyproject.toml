@@ -3,12 +3,13 @@ name = "kinase-library"
 version = "1.0.0"
 description = "The Kinase Library Project: a Global Atlas of the Human Protein Kinome"
 readme = "README.md"
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11"
 license = { text = "CC-BY-NC-SA-3.0" }
 authors = [
     { name = "yaront", email = "tmy2110@cumc.columbia.edu" },
     { name = "harinlee0803", email = "harin.lee@cellsignal.com" },
     { name = "sean-landry", email = "sean.landry@cellsignal.com" },
+    { name = "wolski", email = "witold.wolski@fgcz.uzh.ch" },
 ]
 keywords = [
     "kinase",
@@ -17,34 +18,32 @@ keywords = [
     "kinase enrichment",
 ]
 dependencies = [
-    "numpy>=1.26",
-    "pandas>=2.0",
-    "scipy>=1.14",
-    "natsort>=8.3",
-    "tqdm>=4.66",
-    "pyarrow>=18.0",
-    "biopython>=1.81",
-    "gseapy>=1.1",
-    "matplotlib>=3.8",
-    "seaborn>=0.13",
-    "scikit-learn>=1.6",
-    "statsmodels>=0.14",
-    "adjustText>=1.3",
-    "cyclopts>=3.0",
+    "numpy",
+    "pandas",
+    "scipy",
+    "natsort",
+    "tqdm",
+    "pyarrow",
+    "biopython",
+    "gseapy",
+    "matplotlib",
+    "seaborn",
+    "scikit-learn",
+    "statsmodels",
+    "adjustText",
+    "cyclopts",
 ]
 
 [project.optional-dependencies]
 docs = [
-    "sphinx-autodoc-typehints>=2.5",
-    "sphinx-rtd-theme>=3.0",
-    "nbsphinx>=0.9",
-    "myst-parser>=4.0",
+    "sphinx-autodoc-typehints",
+    "sphinx-rtd-theme",
+    "nbsphinx",
+    "myst-parser",
 ]
 
 [project.urls]
-Homepage = "https://kinase-library.phosphosite.org"
-Source = "https://github.com/TheKinaseLibrary/kinase-library"
-Documentation = "https://kinase-library.readthedocs.io"
+Source = "https://github.com/wolski/kinase-library"
 
 [project.scripts]
 scan-motifs = "kinase_library.scripts.scan_motifs_cli:app"
@@ -54,15 +53,8 @@ run-mea = "kinase_library.scripts.run_mea_cli:app"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/kinase_library", "src/scripts"]
-
-[tool.hatch.build.targets.wheel.sources]
-"src/scripts" = "kinase_library/scripts"
-
 [dependency-groups]
 dev = [
-    "pytest>=8.0",
-    "pytest-cov>=4.0",
-    "snakemake>=8.0",
+    "pytest",
+    "pytest-cov",
 ]
