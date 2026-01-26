@@ -19,7 +19,7 @@ keywords = [
 ]
 dependencies = [
     "numpy",
-    "pandas<2.0",
+    "pandas>=2.0",
     "scipy",
     "natsort",
     "tqdm",
