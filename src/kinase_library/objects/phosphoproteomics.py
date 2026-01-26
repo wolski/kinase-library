@@ -455,7 +455,8 @@ class PhosphoProteomics(object):
 
         print('Calculating percentile for '+str(len(getattr(self,kin_type+'_substrates')))+' '+kin_type+' substrates')
         logger.info('Calculating percentile for '+str(len(getattr(self,kin_type+'_substrates')))+' '+kin_type+' substrates')
-        percent_output = scored_phosprot.progress_apply(lambda x: x.sort_values().searchsorted(score[x.name], side='right'))/len(scored_phosprot)*100
+        # Use apply instead of progress_apply for pandas 3.x compatibility
+        percent_output = scored_phosprot.apply(lambda x: x.sort_values().searchsorted(score[x.name], side='right'))/len(scored_phosprot)*100
         percent_output.index = score.index
 
         percent_output = percent_output.round(round_digits)
