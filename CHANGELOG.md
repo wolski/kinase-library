@@ -4,6 +4,9 @@
 
 Added
 
+- Export native MEA results in the shared GSEA JSON representation, including
+  the complete result table, ranked values, kinase substrate sets, parameters,
+  leading edges, source running enrichment scores, and hit positions.
 - New feature for generating kinome tree using same logic as website. Original kinome tree SVG sourced from [CORAL](http://phanstiel-lab.med.unc.edu/CORAL/)
 
 ## [1.5.0] - 2025-06-27

@@ -4,7 +4,11 @@
 ########################################################
 """
 
+import json
 import os
+from pathlib import Path
+
+import numpy as np
 import pandas as pd
 import gseapy as gp
 
@@ -14,6 +18,25 @@ from ..objects import phosphoproteomics as pps
 from ..logger import logger
 
 #%%
+
+
+def _canonical_sequence_id(value):
+    value = str(value).strip()
+    if value.lower().endswith('-p'):
+        value = value[:-2]
+    return value.upper()
+
+
+def _json_number(value):
+    value = float(value)
+    return value if np.isfinite(value) else None
+
+
+def _result_value(row, column, fallback):
+    if row is not None and column in row and not pd.isna(row[column]):
+        return row[column]
+    return fallback
+
 
 class RankedPhosData(object):
     """
@@ -326,6 +349,220 @@ class MeaEnrichmentResults(object):
 
         if kl_method in ['percentile','percentile_rank']:
             self.phosprot_name = pps_data.phosprot_name
+
+
+    def to_gsea_result_data(self, contrast, category='MEA'):
+        """Return the shared GSEA JSON data for this MEA result.
+
+        The representation is identical to the native ``gsea_result`` block
+        written for fgsea results. It includes the canonical result table,
+        ranked input, gene sets, parameters, source running scores, and
+        one-based hit positions.
+        """
+        ranking = self.gseapy_obj.ranking
+        if not isinstance(ranking, pd.Series):
+            raise ValueError('MEA JSON serialization requires one ranked contrast.')
+        submitted_ids = [str(value) for value in ranking.index]
+        canonical_ids = [_canonical_sequence_id(value) for value in submitted_ids]
+        if len(set(canonical_ids)) != len(canonical_ids):
+            raise ValueError('Sequence normalization creates duplicate ranked identifiers.')
+        canonical_by_input = dict(zip(submitted_ids, canonical_ids, strict=True))
+        rank_values = [_json_number(value) for value in ranking.to_numpy()]
+        if any(value is None for value in rank_values):
+            raise ValueError('Ranked values must be finite.')
+
+        pool = {
+            canonical_id: {
+                'protein_id': canonical_id,
+                'label': canonical_id,
+                'input_label': submitted_id,
+                'input_value': value,
+                'rank': index,
+            }
+            for index, (canonical_id, submitted_id, value) in enumerate(
+                zip(canonical_ids, submitted_ids, rank_values, strict=True),
+                start=1,
+            )
+        }
+        source_results = self.gseapy_obj.results
+        result_order = [
+            str(term)
+            for term in self.enrichment_results.index
+            if str(term) in source_results
+        ]
+        result_order.extend(term for term in source_results if term not in result_order)
+        column_names = [
+            'ID',
+            'Description',
+            'setSize',
+            'enrichmentScore',
+            'NES',
+            'pvalue',
+            'p.adjust',
+            'qvalues',
+            'rank',
+            'leading_edge',
+            'core_enrichment',
+        ]
+        columns = {name: [] for name in column_names}
+        terms = []
+        gene_sets = {}
+        running_scores = {}
+        hit_indices = {}
+
+        for term in result_order:
+            source = source_results[term]
+            row = (
+                self.enrichment_results.loc[term]
+                if term in self.enrichment_results.index
+                else None
+            )
+            if isinstance(row, pd.DataFrame):
+                row = row.iloc[0]
+            full_set = [str(value) for value in self.kin_sub_sets[term]]
+            full_set_lookup = set(full_set)
+            mapped = [value for value in submitted_ids if value in full_set_lookup]
+            leading_text = _result_value(
+                row,
+                'Leading substrates',
+                source.get('lead_genes', ''),
+            )
+            leading = [value for value in str(leading_text).split(';') if value]
+            mapped_canonical = [canonical_by_input[value] for value in mapped]
+            leading_canonical = [
+                canonical_by_input[value]
+                for value in leading
+                if value in canonical_by_input and value in full_set_lookup
+            ]
+            running = [_json_number(value) for value in source['RES']]
+            hits = [int(value) + 1 for value in source['hits']]
+            if len(running) != len(submitted_ids):
+                raise ValueError(f'Running score length differs from ranks for {term}.')
+            es = _json_number(_result_value(row, 'ES', source['es']))
+            nes = _json_number(_result_value(row, 'NES', source['nes']))
+            pvalue = _json_number(_result_value(row, 'p-value', source['pval']))
+            fdr = _json_number(_result_value(row, 'FDR', source['fdr']))
+            extremum = int(np.argmin(running) if es < 0 else np.argmax(running)) + 1
+            result_row = {
+                'ID': term,
+                'Description': term,
+                'setSize': len(mapped),
+                'enrichmentScore': es,
+                'NES': nes,
+                'pvalue': pvalue,
+                'p.adjust': fdr,
+                'qvalues': fdr,
+                'rank': extremum,
+                'leading_edge': (
+                    f"tags={source.get('tag %', '')}, list={source.get('gene %', '')}"
+                ),
+                'core_enrichment': '/'.join(leading),
+            }
+            for name in column_names:
+                columns[name].append(result_row[name])
+            gene_sets[term] = full_set
+            running_scores[term] = running
+            hit_indices[term] = hits
+            terms.append(
+                {
+                    'term_id': term,
+                    'category': category,
+                    'description': term,
+                    'enrichment_score': nes,
+                    'direction': 'top' if nes > 0 else 'bottom' if nes < 0 else 'both ends',
+                    'fdr': fdr,
+                    'method': 'gseapy',
+                    'genes_mapped': len(mapped_canonical),
+                    'genes_in_set': len(full_set),
+                    'gene_ids': mapped_canonical,
+                    'leading_edge_ids': leading_canonical,
+                }
+            )
+
+        params = {
+            'pvalueCutoff': 1.0,
+            'eps': 0.0,
+            'pAdjustMethod': 'BH',
+            'exponent': float(self.gseapy_obj.weight),
+            'minGSSize': int(self.gseapy_obj.min_size),
+            'maxGSSize': int(self.gseapy_obj.max_size),
+            'seed': int(self.gseapy_obj.seed),
+            'permutation_num': int(self.gseapy_obj.permutation_num),
+        }
+        native = {
+            'result': {
+                'columns': columns,
+                'types': {
+                    'ID': 'character',
+                    'Description': 'character',
+                    'setSize': 'integer',
+                    'enrichmentScore': 'double',
+                    'NES': 'double',
+                    'pvalue': 'double',
+                    'p.adjust': 'double',
+                    'qvalues': 'double',
+                    'rank': 'integer',
+                    'leading_edge': 'character',
+                    'core_enrichment': 'character',
+                },
+                'row_names': list(range(1, len(result_order) + 1)),
+                'row_name_type': 'integer',
+            },
+            'gene_sets': gene_sets,
+            'params': params,
+            'param_types': {
+                'pvalueCutoff': 'double',
+                'eps': 'double',
+                'pAdjustMethod': 'character',
+                'exponent': 'double',
+                'minGSSize': 'integer',
+                'maxGSSize': 'integer',
+                'seed': 'integer',
+                'permutation_num': 'integer',
+            },
+            'organism': 'unknown',
+            'set_type': category,
+            'key_type': 'sequence',
+            'readable': False,
+            'gene2symbol': {},
+            'running_scores': running_scores,
+            'hit_indices': hit_indices,
+        }
+        return {
+            'data': {
+                contrast: {
+                    'contrast': contrast,
+                    'gene_pool': pool,
+                    'categories': {
+                        category: {
+                            'category': category,
+                            'contrast': contrast,
+                            'terms': terms,
+                            'gsea_result': native,
+                        }
+                    },
+                }
+            },
+            'rank_lists': {
+                contrast: {
+                    'contrast': contrast,
+                    'entries': dict(zip(submitted_ids, rank_values, strict=True)),
+                }
+            },
+        }
+
+
+    def write_gsea_result_json(self, path, contrast, category='MEA'):
+        """Write this MEA result using the shared GSEA JSON representation."""
+        path = Path(path)
+        with path.open('w', encoding='utf-8') as stream:
+            json.dump(
+                self.to_gsea_result_data(contrast, category),
+                stream,
+                allow_nan=False,
+                separators=(',', ':'),
+            )
+        return path
 
 
     def enriched_subs(self, kinases, data_columns=None, as_dataframe=False,

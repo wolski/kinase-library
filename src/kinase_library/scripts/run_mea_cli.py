@@ -57,6 +57,8 @@ def main(
     threshold: float = 90.0,
     permutations: int = 1000,
     threads: int = 4,
+    json_output: Path | None = None,
+    contrast: str | None = None,
 ) -> None:
     """Run Kinase Library Motif Enrichment Analysis.
 
@@ -80,6 +82,11 @@ def main(
         Number of permutations for GSEA.
     threads
         Number of threads to use.
+    json_output
+        Optional path for the shared GSEA JSON representation.
+    contrast
+        Contrast name stored in JSON. Defaults to the output stem with a
+        leading ``mea_`` removed.
     """
     # Load Data
     print(f"Loading data from {input_file}...")
@@ -126,6 +133,10 @@ def main(
     # Save Results
     print(f"Saving results to {output}...")
     results.enrichment_results.to_csv(output)
+    if json_output is not None:
+        contrast_name = contrast or output.stem.removeprefix("mea_")
+        print(f"Saving shared GSEA JSON to {json_output}...")
+        results.write_gsea_result_json(json_output, contrast_name)
     print("Done.")
 
 
