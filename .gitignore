@@ -39,6 +39,7 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+public/
 
 # Environments
 .env
@@ -54,5 +55,4 @@ venv.bak/
 .ipynb_checkpoints
 data/example_outputs/
 data/example_inputs/
-uv.lock
 .snakemake/

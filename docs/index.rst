@@ -1,7 +1,0 @@
-.. kinase-library documentation master file, created by
-   sphinx-quickstart on Wed Dec 11 10:12:36 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-The Kinase Library documentation - Coming Soon!
-============================================

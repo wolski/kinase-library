@@ -13,7 +13,9 @@
 
 [![Twitter Follow](https://img.shields.io/twitter/follow/KinaseLibrary?style=social)](https://twitter.com/KinaseLibrary) &ensp;
 [![License: CC BY-NC-SA 3.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%203.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/3.0/) &ensp;
-[![PyPI Latest Release](https://img.shields.io/pypi/v/kinase-library.svg)](https://pypi.org/project/kinase-library/)
+[![PyPI Latest Release](https://img.shields.io/pypi/v/kinase-library.svg)](https://pypi.org/project/kinase-library/) &ensp;
+[![Quality](https://github.com/wolski/kinase-library/actions/workflows/quality.yml/badge.svg)](https://github.com/wolski/kinase-library/actions/workflows/quality.yml) &ensp;
+[![Pages](https://github.com/wolski/kinase-library/actions/workflows/pages.yml/badge.svg)](https://github.com/wolski/kinase-library/actions/workflows/pages.yml)
 
 <hr/>
 
@@ -39,7 +41,17 @@ pip install kinase-library
 
 ## Getting Started
 
-The Kinase Library package offers several tools for analyzing kinase phosphorylation sites. Below are some basic examples to help you get started. Please refer to [`Notebooks`](https://github.com/TheKinaseLibrary/kinase-library/tree/master/src/notebooks/) for more comprehensive usage.
+The Kinase Library package offers several tools for analyzing kinase phosphorylation sites. Read the [package documentation](https://wolski.github.io/kinase-library/) or refer to the [`Notebooks`](https://github.com/TheKinaseLibrary/kinase-library/tree/master/src/notebooks/) for more comprehensive usage.
+
+## Development
+
+```bash
+uv sync --frozen --group dev
+make check
+make docs
+```
+
+The local quality gate and GitHub Actions use the same locked uv environment. `make docs` builds the Zensical site into the ignored `public/` directory; GitHub Actions publishes that output to GitHub Pages from `master`.
 
 ## Data Updates
 

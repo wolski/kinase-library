@@ -1,0 +1,24 @@
+site_name: Kinase Library
+site_description: Kinase-substrate prediction and enrichment analysis for phosphoproteomics.
+site_url: https://wolski.github.io/kinase-library/
+repo_url: https://github.com/wolski/kinase-library
+repo_name: wolski/kinase-library
+docs_dir: docs
+site_dir: public
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.sections
+    - navigation.top
+
+nav:
+  - Home: index.md
+  - Shared GSEA JSON: gsea-json.md
+
+markdown_extensions:
+  - admonition
+  - tables
+  - pymdownx.highlight
+  - pymdownx.superfences

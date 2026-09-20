@@ -1,0 +1,36 @@
+VENV_BIN := .venv/bin
+DOCS_PORT ?= 8000
+
+.DEFAULT_GOAL := help
+.PHONY: help sync test build docs docs-serve docs-serve-public check clean
+
+help:  ## Show developer commands
+	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+		| awk 'BEGIN{FS=":.*?## "}{printf "  \033[36m%-18s\033[0m %s\n", $$1, $$2}'
+
+sync:  ## Synchronize the locked development environment
+	uv sync --frozen --group dev
+
+test:  ## Run tests with branch coverage
+	$(VENV_BIN)/pytest --cov=kinase_library --cov-branch
+
+build:  ## Build and validate source and wheel distributions
+	uv build
+	$(VENV_BIN)/twine check dist/*
+
+docs:  ## Build user documentation with strict warnings
+	uv run --frozen --group docs zensical build --clean --strict
+
+docs-serve:  ## Serve user documentation locally
+	uv run --frozen --group docs zensical serve
+
+docs-serve-public:  ## Serve the prebuilt public directory without rebuilding
+	@test -f public/index.html || (echo "public/index.html is missing; run 'make docs' first" >&2; exit 1)
+	$(VENV_BIN)/python -m http.server $(DOCS_PORT) --directory public
+
+check:  ## Run every merge-blocking quality gate
+	uv lock --check
+	$(MAKE) test build docs
+
+clean:  ## Remove generated build and quality artifacts
+	$(VENV_BIN)/python -c "import shutil; [shutil.rmtree(path, ignore_errors=True) for path in ('build', 'dist', 'public', '.pytest_cache', '.ruff_cache', 'htmlcov')]"

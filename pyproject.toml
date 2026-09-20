@@ -34,27 +34,32 @@ dependencies = [
     "cyclopts",
 ]
 
-[project.optional-dependencies]
-docs = [
-    "sphinx-autodoc-typehints",
-    "sphinx-rtd-theme",
-    "nbsphinx",
-    "myst-parser",
-]
-
 [project.urls]
+Documentation = "https://wolski.github.io/kinase-library/"
+Homepage = "https://kinase-library.phosphosite.org"
 Source = "https://github.com/wolski/kinase-library"
+Issues = "https://github.com/wolski/kinase-library/issues"
 
 [project.scripts]
 scan-motifs = "kinase_library.scripts.scan_motifs_cli:app"
 run-mea = "kinase_library.scripts.run_mea_cli:app"
 
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["uv_build>=0.11.7,<0.12"]
+build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "pytest",
-    "pytest-cov",
+    "build>=1.3,<2",
+    "pytest>=9,<10",
+    "pytest-cov>=7,<8",
+    "twine>=6,<7",
 ]
+docs = [
+    "pymdown-extensions>=11,<12",
+    "zensical==0.0.43",
+]
+
+[tool.pytest.ini_options]
+addopts = ["--strict-config", "--strict-markers", "-ra"]
+testpaths = ["tests"]
